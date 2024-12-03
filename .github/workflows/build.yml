@@ -1,0 +1,59 @@
+name: Build and Patch Frida
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-patched-frida:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository containing this workflow
+      - name: Checkout current repository
+        uses: actions/checkout@v4
+
+      # Step 2: Checkout Frida repository with all submodules
+      - name: Checkout Frida repository
+        uses: actions/checkout@v4
+        with:
+          repository: frida/frida
+          path: frida
+          submodules: true
+
+      # Step 3: Apply patches to Frida
+      - name: Apply patches to frida-core
+        run: |
+          cd frida/frida-core && git apply --reject --whitespace=fix ../../frida-core/patch.patch
+
+      - name: Apply patches to frida-gum
+        run: |
+          cd frida/frida-gum && git apply --reject --whitespace=fix ../../frida-gum/patch.patch
+
+      # Step 4: Set up Android NDK
+      - name: Set up Android NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: "25.2.9519653"
+
+      # Step 5: Build patched Frida for Android ARM64
+      - name: Build patched Frida
+        run: |
+          ANDROID_NDK_ROOT="$ANDROID_HOME/ndk/25.2.9519653" make core-android-arm64
+
+      # Step 6: Hide Frida symbols in compiled binaries
+      - name: Install Python dependencies
+        run: |
+          pip install lief
+
+      - name: Hide Frida symbols
+        run: |
+          python src/anti-anti-frida.py build/tmp-android-arm64/frida-core/lib/agent/frida-agent.so
+          python src/anti-anti-frida.py build/tmp-android-arm64/frida-core/lib/gadget/frida-gadget.so
+          python src/anti-anti-frida.py build/frida-android-arm64/bin/frida-inject
+          python src/anti-anti-frida.py build/frida-android-arm64/bin/frida-portal
+          python src/anti-anti-frida.py build/frida-android-arm64/bin/frida-server
