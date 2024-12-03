@@ -29,11 +29,11 @@ jobs:
       # Step 3: Apply patches to Frida
       - name: Apply patches to frida-core
         run: |
-          cd frida/frida-core && git apply --reject --whitespace=fix ../../frida-core/patch.patch
+          cd subprojects/frida-core && git apply --reject --whitespace=fix ../../frida-core/patch.patch
 
       - name: Apply patches to frida-gum
         run: |
-          cd frida/frida-gum && git apply --reject --whitespace=fix ../../frida-gum/patch.patch
+          cd subprojects/frida-gum && git apply --reject --whitespace=fix ../../frida-gum/patch.patch
 
       # Step 4: Set up Android NDK
       - name: Set up Android NDK
